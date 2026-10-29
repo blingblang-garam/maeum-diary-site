@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마음일기 발표 준비</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  svg.flow { width: 100%; height: auto; display: block; }
+  svg.flow text { font-family: inherit; }
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; font-size: 13px; }
+  .keys div { border-radius: 10px; padding: 10px 12px; }
+  .keys b { display: block; font-size: 13px; margin-bottom: 2px; }
+
+  ol.demo { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+  ol.demo li { counter-increment: s; border-top: 1px solid var(--line); }
+  ol.demo li:first-child { border-top: 0; }
+  ol.demo label { display: grid; grid-template-columns: 22px 28px 1fr; gap: 8px; align-items: start; padding: 10px 2px; cursor: pointer; }
+  ol.demo input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ok); }
+  ol.demo .n::before { content: counter(s); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); font-size: 12px; font-weight: 700; color: var(--muted); }
+  ol.demo b { display: block; font-size: 14px; }
+  ol.demo span.d { display: block; font-size: 13px; color: var(--muted); }
+  ol.demo li.checked b { text-decoration: line-through; color: var(--muted); }
+  .demo-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .demo-head h2 { margin: 0; }
+
+  .timer { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+  .clock { font-size: 48px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+  .clock.over { color: var(--safe); }
+  .now-part { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .now-part b { color: var(--text); }
+  .segs { display: flex; gap: 3px; height: 10px; margin: 16px 0 12px; }
+  .segs > div { border-radius: 3px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .segs > div > span { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+  .segs > div.over > span { background: var(--safe); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  table.laps { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 14px; }
+  table.laps th, table.laps td { text-align: left; padding: 6px 4px; border-top: 1px solid var(--line); }
+  table.laps th { color: var(--muted); font-weight: 600; }
+  table.laps td.r, table.laps th.r { text-align: right; }
+  table.laps tr.cur td { font-weight: 700; }
+  .plus { color: var(--safe); } .minus { color: var(--ok); }
+
+  @media (max-width: 600px) {
+    .keys { grid-template-columns: 1fr; }
+    .timer { grid-template-columns: 1fr; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap stack">
+  <section class="card">
+    <p class="eyebrow">시스템 구조</p>
+    <h1>빠른 모델과 깊은 모델의 역할 분담</h1>
+    <p class="sub" style="margin-bottom:14px">쓰는 동안에는 Jev가 문장마다 즉시 반응하고, 저장한 뒤에는 Claude가 일기 전체를 깊게 읽습니다.</p>
+    <svg class="flow" viewBox="0 0 820 290" role="img" aria-label="문장 입력에서 Jev, 안전 레이어, Claude를 거쳐 최종 위험도로 이어지는 흐름">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      <!-- 1행: 쓰는 동안 -->
+      <text x="10" y="22" font-size="12" font-weight="700" fill="var(--muted)">쓰는 동안 · 문장마다</text>
+      <rect x="10" y="36" width="150" height="74" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="85" y="68" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">문장 입력</text>
+      <text x="85" y="90" text-anchor="middle" font-size="12" fill="var(--muted)">한국어 일기</text>
+
+      <rect x="215" y="36" width="200" height="74" rx="12" fill="var(--fast-soft)" stroke="var(--fast)"/>
+      <text x="315" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="var(--fast)">Jev · System One</text>
+      <text x="315" y="82" text-anchor="middle" font-size="12" fill="var(--text)">감정 7종 · 강도 · 위험 질문</text>
+      <text x="315" y="99" text-anchor="middle" font-size="12" fill="var(--muted)">→ 이모지와 확률</text>
+
+      <rect x="470" y="36" width="200" height="74" rx="12" fill="var(--safe-soft)" stroke="var(--safe)"/>
+      <text x="570" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="var(--safe)">안전 레이어</text>
+      <text x="570" y="82" text-anchor="middle" font-size="12" fill="var(--text)">키워드 규칙 + Jev 확률</text>
+      <text x="570" y="99" text-anchor="middle" font-size="12" fill="var(--muted)">→ 1차 위험도 0~4</text>
+
+      <line x1="160" y1="73" x2="211" y2="73" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="415" y1="73" x2="466" y2="73" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- 저장 -->
+      <path d="M570 110 V150 H315 V176" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+      <rect x="400" y="138" width="92" height="24" rx="12" fill="var(--surface)" stroke="var(--line)"/>
+      <text x="446" y="155" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">💾 저장</text>
+
+      <!-- 2행: 저장한 뒤 -->
+      <text x="10" y="196" font-size="12" font-weight="700" fill="var(--muted)">저장한 뒤 · 일기 전체</text>
+      <rect x="215" y="180" width="200" height="94" rx="12" fill="var(--deep-soft)" stroke="var(--deep)"/>
+      <text x="315" y="206" text-anchor="middle" font-size="15" font-weight="700" fill="var(--deep)">Claude · System Two</text>
+      <text x="315" y="226" text-anchor="middle" font-size="12" fill="var(--text)">① 위험 신호 (근거 문장 인용)</text>
+      <text x="315" y="244" text-anchor="middle" font-size="12" fill="var(--text)">② 감정 진단 · 인지 패턴</text>
+      <text x="315" y="262" text-anchor="middle" font-size="12" fill="var(--text)">③ 실천 계획 · 상담</text>
+
+      <rect x="470" y="180" width="200" height="94" rx="12" fill="var(--surface)" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="570" y="212" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">최종 위험도</text>
+      <text x="570" y="236" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)">max(규칙, Jev, Claude)</text>
+      <text x="570" y="257" text-anchor="middle" font-size="12" fill="var(--muted)">LLM은 경보를 낮추지 못함</text>
+
+      <path d="M570 110 V128 H690 V227 H674" fill="none" stroke="var(--safe)" stroke-width="1.5" marker-end="url(#arr)" opacity=".7"/>
+      <line x1="415" y1="227" x2="466" y2="227" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="712" y="180" width="100" height="94" rx="12" fill="var(--safe)"/>
+      <text x="762" y="208" text-anchor="middle" font-size="12" font-weight="700" fill="var(--surface)">위험 3 이상</text>
+      <text x="762" y="230" text-anchor="middle" font-size="12" fill="var(--surface)">위기 연락처</text>
+      <text x="762" y="248" text-anchor="middle" font-size="11" fill="var(--surface)">109 · 1577-0199</text>
+      <text x="762" y="264" text-anchor="middle" font-size="11" fill="var(--surface)">1388 · 119/112</text>
+      <line x1="670" y1="250" x2="708" y2="250" stroke="var(--safe)" stroke-width="1.5" marker-end="url(#arr)"/>
+    </svg>
+    <div class="keys">
+      <div style="background:var(--fast-soft)"><b style="color:var(--fast)">Jev · 빠르게</b>정해진 선택지 안에서만 답해 엉뚱한 라벨이 없고, 싸고 빠릅니다.</div>
+      <div style="background:var(--deep-soft)"><b style="color:var(--deep)">Claude · 깊게</b>간접 표현과 맥락, 최근 변화까지 읽고 근거 문장을 인용합니다.</div>
+      <div style="background:var(--safe-soft)"><b style="color:var(--safe)">안전 · 세 겹</b>규칙, Jev, Claude 중 가장 높은 위험도를 따릅니다. 진단이 아닌 자기 점검입니다.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="demo-head">
+      <h2>시연 순서</h2>
+      <button class="btn" id="demo-reset" type="button">체크 초기화</button>
+    </div>
+    <ol class="demo" id="demo"></ol>
+  </section>
+
+  <section class="card">
+    <h2>발표 리허설 타이머</h2>
+    <div class="timer">
+      <div>
+        <div class="clock num" id="clock">00:00</div>
+        <div class="now-part" id="now-part"></div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="start" type="button">시작</button>
+        <button class="btn" id="next" type="button">다음 구간 ▶</button>
+        <button class="btn" id="reset" type="button">초기화</button>
+      </div>
+    </div>
+    <div class="segs" id="segs"></div>
+    <table class="laps">
+      <thead><tr><th>구간</th><th class="r">목표</th><th class="r">실제</th><th class="r">차이</th></tr></thead>
+      <tbody id="laps"></tbody>
+    </table>
+  </section>
+
+  <p class="foot">체크 상태는 지금 보고 있는 브라우저에만 저장됩니다.</p>
+</main>
+
+<script src="data.js"></script>
+<script>
+  const S = window.SITE;
+  const $ = (id) => document.getElementById(id);
+
+  // ── 시연 순서 체크리스트 ─────────────────────────────
+  const KEY = "maeum-demo-checks";
+  let checks = {};
+  try { checks = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { checks = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(checks)); } catch (e) {} };
+
+  function renderDemo() {
+    $("demo").innerHTML = "";
+    S.demo.forEach((d, i) => {
+      const li = document.createElement("li");
+      if (checks[i]) li.className = "checked";
+      li.innerHTML = `<label><input type="checkbox" ${checks[i] ? "checked" : ""}><span class="n"></span><span><b></b><span class="d"></span></span></label>`;
+      li.querySelector("b").textContent = d.step;
+      li.querySelector(".d").textContent = d.detail;
+      li.querySelector("input").addEventListener("change", (e) => {
+        checks[i] = e.target.checked;
+        li.classList.toggle("checked", e.target.checked);
+        save();
+      });
+      $("demo").append(li);
+    });
+  }
+  renderDemo();
+  $("demo-reset").addEventListener("click", () => { checks = {}; save(); renderDemo(); });
+
+  // ── 리허설 타이머 ────────────────────────────────────
+  const parts = S.talk.map((t) => ({ ...t, sec: t.minutes * 60 }));
+  const total = parts.reduce((a, p) => a + p.sec, 0);
+  let elapsed = 0, startedAt = null, laps = [];   // laps[i] = i번째 구간이 끝난 시점(초)
+
+  const mmss = (s) => { const a = Math.abs(Math.round(s)); return `${s < 0 ? "-" : ""}${String(Math.floor(a / 60)).padStart(2, "0")}:${String(a % 60).padStart(2, "0")}`; };
+  const current = () => elapsed + (startedAt ? (Date.now() - startedAt) / 1000 : 0);
+
+  $("segs").innerHTML = parts.map((p) => `<div style="flex:${p.sec}"><span style="width:0"></span></div>`).join("");
+
+  function render() {
+    const t = current();
+    const idx = Math.min(laps.length, parts.length - 1);
+    $("clock").textContent = mmss(t);
+    $("clock").classList.toggle("over", t > total);
+    const remain = total - t;
+    $("now-part").innerHTML = laps.length >= parts.length
+      ? `<b>모든 구간 완료</b> · 전체 목표 ${mmss(total)}`
+      : `<b></b> · 전체 ${remain >= 0 ? "남은 시간 " + mmss(remain) : mmss(-remain) + " 초과"}`;
+    if (laps.length < parts.length) $("now-part").querySelector("b").textContent = `${idx + 1}. ${parts[idx].part}`;
+
+    // 구간 막대: 각 구간에서 실제로 쓴 시간을 목표 대비로 채운다.
+    [...$("segs").children].forEach((el, i) => {
+      const from = i === 0 ? 0 : (laps[i - 1] ?? null);
+      let used = 0;
+      if (i < laps.length) used = laps[i] - from;
+      else if (i === laps.length && from != null) used = t - from;
+      el.firstChild.style.width = Math.min(100, used / parts[i].sec * 100) + "%";
+      el.classList.toggle("over", used > parts[i].sec);
+    });
+
+    $("laps").innerHTML = "";
+    parts.forEach((p, i) => {
+      const from = i === 0 ? 0 : laps[i - 1];
+      const done = i < laps.length;
+      const live = i === laps.length && (startedAt || elapsed) && from != null;
+      const used = done ? laps[i] - from : live ? t - from : null;
+      const diff = used == null ? null : used - p.sec;
+      const tr = document.createElement("tr");
+      if (live) tr.className = "cur";
+      tr.innerHTML = `<td></td><td class="r num">${mmss(p.sec)}</td><td class="r num">${used == null ? "–" : mmss(used)}</td>
+        <td class="r num ${diff > 0 ? "plus" : diff < 0 ? "minus" : ""}">${diff == null ? "–" : (diff > 0 ? "+" : "") + mmss(diff)}</td>`;
+      tr.firstChild.textContent = `${i + 1}. ${p.part}`;
+      $("laps").append(tr);
+    });
+  }
+
+  $("start").addEventListener("click", () => {
+    if (startedAt) { elapsed = current(); startedAt = null; $("start").textContent = "계속"; }
+    else { startedAt = Date.now(); $("start").textContent = "일시정지"; }
+    render();
+  });
+  $("next").addEventListener("click", () => {
+    if (laps.length < parts.length && (startedAt || elapsed)) { laps.push(current()); render(); }
+  });
+  $("reset").addEventListener("click", () => {
+    elapsed = 0; startedAt = null; laps = []; $("start").textContent = "시작"; render();
+  });
+  render();
+  setInterval(() => { if (startedAt) render(); }, 250);
+</script>
+</body>
+</html>

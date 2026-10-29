@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마음일기 로드맵</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; }
+  .dday { text-align: right; }
+  .dday .big { font-size: 44px; font-weight: 800; line-height: 1; color: var(--accent); letter-spacing: -.02em; }
+  .dday .clock { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .overall { margin-top: 16px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+  .overall .bar { flex: 1; }
+
+  .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; position: relative; }
+  .timeline .seg { height: 10px; border-radius: 4px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .timeline .seg > span { position: absolute; inset: 0 auto 0 0; background: var(--accent); opacity: .35; }
+  .timeline .seg.past > span { width: 100%; }
+  .tl-labels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-size: 11px; color: var(--muted); }
+
+  .phases { grid-template-columns: repeat(2, 1fr); }
+  .phase { padding: 16px; }
+  .phase.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow); }
+  .phase-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .phase-head h2 { margin: 0; font-size: 15px; }
+  .phase .dates { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .phase .bar { margin-bottom: 12px; }
+  .tasks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .tasks li { display: flex; gap: 8px; padding: 3px 0; }
+  .tasks li::before { content: ""; flex: none; width: 14px; height: 14px; margin-top: 4px; border-radius: 4px; border: 1.5px solid var(--line); }
+  .tasks li.done { color: var(--muted); }
+  .tasks li.done::before { background: var(--ok); border-color: var(--ok);
+    -webkit-mask: none; box-shadow: inset 0 0 0 2px var(--surface); }
+  .late { color: var(--safe); font-weight: 600; }
+
+  @media (max-width: 600px) {
+    .hero { grid-template-columns: 1fr; }
+    .dday { text-align: left; }
+    .phases { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap stack">
+  <section class="card">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">대학 인공지능학술제</p>
+        <h1 id="project"></h1>
+        <p class="sub" id="tagline"></p>
+      </div>
+      <div class="dday">
+        <div class="big num" id="dday">D-0</div>
+        <div class="clock num" id="clock"></div>
+      </div>
+    </div>
+    <div class="overall">
+      <span>전체 진행률</span>
+      <div class="bar"><span id="overall-bar"></span></div>
+      <span class="num" id="overall-pct"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>일정</h2>
+    <div class="timeline" id="timeline"></div>
+    <div class="tl-labels" id="tl-labels"></div>
+  </section>
+
+  <section class="grid phases" id="phases"></section>
+
+  <p class="foot" id="deadline-label"></p>
+</main>
+
+<script src="data.js"></script>
+<script>
+  const S = window.SITE;
+  const $ = (id) => document.getElementById(id);
+  const DAY = 86400000;
+  // 날짜만 있는 값은 한국 시간 자정으로 해석한다.
+  const kst = (d) => new Date(d + "T00:00:00+09:00");
+  const fmt = (d) => `${kst(d).getMonth() + 1}/${kst(d).getDate()}`;
+  const deadline = new Date(S.deadline);
+
+  $("project").textContent = S.project;
+  $("tagline").textContent = S.tagline;
+  $("deadline-label").textContent = S.deadlineLabel;
+
+  function tick() {
+    const left = deadline - Date.now();
+    if (left <= 0) {
+      $("dday").textContent = "제출 완료";
+      $("clock").textContent = "";
+      return;
+    }
+    // D-day는 한국 날짜 기준으로 센다.
+    const todayKst = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+    const deadlineKst = new Date(deadline.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+    const days = Math.round((kst(deadlineKst) - kst(todayKst)) / DAY);
+    $("dday").textContent = days === 0 ? "D-Day" : `D-${days}`;
+    const d = Math.floor(left / DAY), h = Math.floor(left / 3600000) % 24, m = Math.floor(left / 60000) % 60, s = Math.floor(left / 1000) % 60;
+    $("clock").textContent = `마감까지 ${d ? d + "일 " : ""}${h}시간 ${String(m).padStart(2, "0")}분 ${String(s).padStart(2, "0")}초`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  const now = Date.now();
+  const all = S.phases.flatMap((p) => p.tasks);
+  const pct = (list) => list.length ? Math.round(list.filter((t) => t.done).length / list.length * 100) : 0;
+  $("overall-bar").style.width = pct(all) + "%";
+  $("overall-pct").textContent = pct(all) + "%";
+
+  S.phases.forEach((p) => {
+    const start = kst(p.start).getTime();
+    const end = kst(p.end).getTime() + DAY;
+    const state = now >= end ? "past" : now >= start ? "now" : "next";
+    const timeShare = Math.min(1, Math.max(0, (now - start) / (end - start)));
+
+    const seg = document.createElement("div");
+    seg.className = "seg " + state;
+    seg.innerHTML = `<span style="width:${state === "now" ? timeShare * 100 : state === "past" ? 100 : 0}%"></span>`;
+    $("timeline").append(seg);
+    const lab = document.createElement("div");
+    lab.textContent = `${fmt(p.start)}–${fmt(p.end)}`;
+    $("tl-labels").append(lab);
+
+    const done = pct(p.tasks);
+    const late = state === "past" && done < 100;
+    const pillClass = done === 100 ? "done" : state === "now" ? "now" : late ? "warn" : "";
+    const pillText = done === 100 ? "완료" : state === "now" ? "진행 중" : late ? "남은 일 있음" : "예정";
+
+    const card = document.createElement("article");
+    card.className = "card phase" + (state === "now" ? " now" : "");
+    card.innerHTML = `
+      <div class="phase-head"><h2></h2><span class="pill ${pillClass}">${pillText}</span></div>
+      <div class="dates num">${fmt(p.start)} – ${fmt(p.end)} · 할 일 ${p.tasks.filter((t) => t.done).length}/${p.tasks.length}</div>
+      <div class="bar"><span style="width:${done}%"></span></div>
+      <ul class="tasks"></ul>`;
+    card.querySelector("h2").textContent = p.name;
+    const ul = card.querySelector(".tasks");
+    p.tasks.forEach((t) => {
+      const li = document.createElement("li");
+      li.textContent = t.text;
+      if (t.done) li.className = "done";
+      ul.append(li);
+    });
+    $("phases").append(card);
+  });
+</script>
+</body>
+</html>

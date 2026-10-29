@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마음일기 위젯</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  .links { grid-template-columns: repeat(3, 1fr); }
+  .links a { display: block; color: inherit; text-decoration: none; }
+  .links a:hover { border-color: var(--accent); }
+  .links .ico { font-size: 22px; }
+  .links b { display: block; margin: 8px 0 4px; }
+  .links span { font-size: 13px; color: var(--muted); }
+  @media (max-width: 600px) { .links { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap stack">
+  <section>
+    <p class="eyebrow">대학 인공지능학술제</p>
+    <h1>마음일기</h1>
+    <p class="sub" id="tagline"></p>
+  </section>
+  <nav class="grid links">
+    <a class="card" href="roadmap.html"><div class="ico">🗓️</div><b>D-day와 로드맵</b><span>제출 마감까지 남은 시간과 단계별 진행률</span></a>
+    <a class="card" href="metrics.html"><div class="ico">📊</div><b>평가 지표</b><span>Jev와 오프라인 베이스라인의 정확도·F1·재현율·지연</span></a>
+    <a class="card" href="presentation.html"><div class="ico">🎤</div><b>발표 준비</b><span>시스템 구조도, 시연 순서, 리허설 타이머</span></a>
+  </nav>
+  <p class="foot">각 페이지 주소를 Notion에 /임베드 로 붙이면 위젯으로 들어갑니다.</p>
+</main>
+<script src="data.js"></script>
+<script>document.getElementById("tagline").textContent = window.SITE.tagline;</script>
+</body>
+</html>

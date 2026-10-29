@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마음일기 평가 지표</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  .metrics { grid-template-columns: repeat(4, 1fr); }
+  .metric { padding: 16px; }
+  .metric .name { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; margin-top: 8px; font-size: 13px; }
+  .row .val { font-weight: 700; font-size: 18px; }
+  .row .val.empty { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .row .track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .row .track > span { display: block; height: 100%; border-radius: inherit; }
+  .row .who { color: var(--muted); }
+  .best { font-size: 11px; font-weight: 700; color: var(--ok); margin-left: 4px; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+  .empty-state { display: flex; gap: 14px; align-items: center; background: var(--surface-2); border-radius: 12px; padding: 14px 16px; font-size: 14px; }
+  .empty-state b { display: block; }
+  .empty-state span { color: var(--muted); font-size: 13px; }
+  dl.setup { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+  dl.setup dt { color: var(--muted); }
+  dl.setup dd { margin: 0; }
+
+  @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 420px) { .metrics { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap stack">
+  <section class="card">
+    <div class="head">
+      <div>
+        <p class="eyebrow">평가</p>
+        <h1>Jev는 한국어 일기를 얼마나 잘 읽을까?</h1>
+        <p class="sub" id="note"></p>
+      </div>
+      <span class="pill" id="status"></span>
+    </div>
+  </section>
+
+  <div id="empty"></div>
+
+  <section>
+    <div class="legend" id="legend" style="margin: 0 2px 10px"></div>
+    <div class="grid metrics" id="metrics"></div>
+  </section>
+
+  <section class="card">
+    <h2>측정 방법</h2>
+    <dl class="setup" id="setup"></dl>
+  </section>
+
+  <p class="foot">수치는 팀이 측정을 마치고 확정한 값만 공개합니다. 평가에 쓴 말뭉치 원문은 재배포 금지라 싣지 않습니다.</p>
+</main>
+
+<script src="data.js"></script>
+<script>
+  const E = window.SITE.evaluation;
+  const $ = (id) => document.getElementById(id);
+  const colors = ["var(--muted)", "var(--fast)", "var(--deep)", "var(--ok)"];
+
+  $("note").textContent = E.note;
+  const anyValue = E.systems.some((s) => Object.values(E.results[s.key] || {}).some((v) => v != null));
+  $("status").textContent = anyValue ? (E.source ? "측정 완료" : "측정 중") : E.status;
+  $("status").className = "pill " + (anyValue ? "done" : "now");
+
+  if (!anyValue) {
+    $("empty").innerHTML = `<div class="empty-state"><div style="font-size:24px">🧪</div>
+      <div><b>아직 측정 전입니다</b><span>${E.status} · 측정이 끝나면 아래 카드에 수치가 채워집니다.</span></div></div>`;
+  }
+
+  $("legend").innerHTML = E.systems.map((s, i) =>
+    `<span><i style="background:${colors[i % colors.length]}"></i>${s.name} <span style="opacity:.75">(${s.detail})</span></span>`).join("");
+
+  const show = (v, unit) => v == null ? null : unit === "%" ? (v * 100).toFixed(1) + "%" : Math.round(v) + "ms";
+
+  E.metrics.forEach((m) => {
+    const vals = E.systems.map((s) => (E.results[s.key] || {})[m.key]);
+    const known = vals.filter((v) => v != null);
+    const best = known.length > 1 ? (m.better === "low" ? Math.min(...known) : Math.max(...known)) : null;
+    // 지연 시간은 가장 느린 값을 100%로 놓고 막대 길이를 정한다.
+    const scale = m.unit === "%" ? 1 : Math.max(...known, 1);
+
+    const card = document.createElement("article");
+    card.className = "card metric";
+    card.innerHTML = `<div class="name"></div>`;
+    card.querySelector(".name").textContent = m.name;
+    E.systems.forEach((s, i) => {
+      const v = vals[i];
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `
+        <span class="who"></span>
+        <span class="val num ${v == null ? "empty" : ""}">${show(v, m.unit) ?? "측정 예정"}${v != null && v === best ? '<span class="best">최고</span>' : ""}</span>
+        <div class="track"><span style="width:${v == null ? 0 : Math.min(100, v / scale * 100)}%;background:${colors[i % colors.length]}"></span></div>`;
+      row.querySelector(".who").textContent = s.name;
+      card.append(row);
+    });
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = m.better === "low" ? "낮을수록 좋음" : "높을수록 좋음";
+    card.append(hint);
+    $("metrics").append(card);
+  });
+
+  const setup = [
+    ["데이터", E.dataset],
+    ["비교 대상", E.systems.map((s) => `${s.name} (${s.detail})`).join(" · ")],
+    ["감정 분류", "기쁨 · 평온 · 슬픔 · 불안 · 분노 · 상처 · 당황 (7종)"],
+    ["위험 탐지", "위험 문장 테스트셋에서 놓치지 않은 비율 (재현율 우선)"],
+    ["결과 출처", E.source || "측정 후 기록"],
+  ];
+  setup.forEach(([k, v]) => {
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd"); dd.textContent = v;
+    $("setup").append(dt, dd);
+  });
+</script>
+</body>
+</html>
